@@ -8,32 +8,29 @@ using System.Security.Authentication;
 
 SslProtocols[] tlsVersions = [SslProtocols.Ssl2, SslProtocols.Ssl3, SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12, SslProtocols.Tls13];
 
-foreach (var prot in tlsVersions)
-{
-    Console.WriteLine($"Trying {prot}");
-    try
-    {
+foreach (var version in tlsVersions) {
+    Console.WriteLine($"Trying {version}");
+
+    try {
         var host = "localhost";
         var port = 1433;
 
         TcpClient client = new(host, port);
 
-        using (SslStream sslStream = new SslStream(client.GetStream(),
+        using SslStream sslStream = new(client.GetStream(),
             false,
             (sender, certificate, chain, sslPolicyErrors) => true,  // we don't care about the cert, we're only checking protocol support
-            null)) {
+            null);
+        
+        sslStream.AuthenticateAsClient(new SslClientAuthenticationOptions {
+            TargetHost = host,
+            EnabledSslProtocols = version
+        });
 
-            sslStream.AuthenticateAsClient(new SslClientAuthenticationOptions {
-                    TargetHost = host,
-                    EnabledSslProtocols = prot
-            });
+        Console.WriteLine($"{sslStream.SslProtocol} using {sslStream.NegotiatedCipherSuite}");
 
-            Console.WriteLine($"{sslStream.SslProtocol} using {sslStream.NegotiatedCipherSuite}");
-
-            client.Close();
-        }
-    }
-    catch (Exception e) {
+        client.Close();
+    } catch (Exception e) {
         Console.WriteLine($"Exception: {e.InnerException.Message}");
     }
 
