@@ -6,12 +6,6 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
 
-string host = "localhost";
-int port = 1433;
-
-// this does nothing in .NET Core
-//ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11;
-
 SslProtocols[] tlsVersions = [SslProtocols.Ssl2, SslProtocols.Ssl3, SslProtocols.Tls, SslProtocols.Tls11, SslProtocols.Tls12, SslProtocols.Tls13];
 
 foreach (var prot in tlsVersions)
@@ -19,21 +13,22 @@ foreach (var prot in tlsVersions)
     Console.WriteLine($"Trying {prot}");
     try
     {
+        var host = "localhost";
+        var port = 1433;
+
         TcpClient client = new(host, port);
 
         using (SslStream sslStream = new SslStream(client.GetStream(),
             false,
-            (sender, certificate, chain, sslPolicyErrors) => true,  // we don't care about the cert only checking protocol support
+            (sender, certificate, chain, sslPolicyErrors) => true,  // we don't care about the cert, we're only checking protocol support
             null)) {
 
-            var options = new SslClientAuthenticationOptions {
-                TargetHost = host,
-                EnabledSslProtocols = prot
-            };
-            sslStream.AuthenticateAsClient(options);
+            sslStream.AuthenticateAsClient(new SslClientAuthenticationOptions {
+                    TargetHost = host,
+                    EnabledSslProtocols = prot
+            });
 
-            Console.WriteLine($"SSL/TLS protocol: {sslStream.SslProtocol}");
-            Console.WriteLine($"Ciphersuite: {sslStream.CipherAlgorithm} {sslStream.HashAlgorithm}");
+            Console.WriteLine($"{sslStream.SslProtocol} using {sslStream.NegotiatedCipherSuite}");
 
             client.Close();
         }
