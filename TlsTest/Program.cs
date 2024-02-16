@@ -31,7 +31,8 @@ foreach (var version in tlsVersions) {
 
         client.Close();
     } catch (Exception e) {
-        Console.WriteLine($"Exception: {e.InnerException.Message}");
+        Console.WriteLine($"{e.Message}");
+        Console.WriteLine($"Exception: {e.InnerException?.Message}");
     }
 
     Console.WriteLine();
